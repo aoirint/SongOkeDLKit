@@ -14,6 +14,12 @@ import BiAudioTransform.functional as BTF
 from SongOkeCroppedDataset import *
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resume', action='store_true')
+    parser.add_argument('--checkpoint', type=str, default=None)
+    args = parser.parse_args()
+
     root_dir = os.path.expanduser('~/datasets/MaouSongOkeCroppedDataset')
     epochs = 300
     batch_size = 32
@@ -22,6 +28,9 @@ if __name__ == '__main__':
     dump_interval = 5
     log_dir = 'outputs'
     device = torch.device('cuda:0')
+
+    resume = args.resume
+    checkpoint_path = args.checkpoint
 
     checkpoint_dir = os.path.join(log_dir, 'checkpoints')
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -71,12 +80,24 @@ if __name__ == '__main__':
 
         plt.savefig(os.path.join(log_dir, 'loss.png'))
 
+    first_epoch = 1
+    def load_checkpoint(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+
+        model.load_state_dict(checkpoint['model'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        scheduler.load_state_dict(checkpoint['scheduler'])
+
+        global log_loss, first_epoch
+        log_loss = checkpoint['log_loss']
+        first_epoch = checkpoint['epoch'] + 1
+
     def save_checkpoint():
         checkpoint = {
             'model': model.state_dict(),
-            'loss': log_loss,
             'optimizer': optimizer,
             'scheduler': scheduler,
+            'log_loss': log_loss,
             'epoch': epoch,
         }
         if epoch % dump_interval == 0:
@@ -87,12 +108,18 @@ if __name__ == '__main__':
     test_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=cpu_workers)
 
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-    scheduler = LR.MultiStepLR(optimizer, milestones=[ 100, 200, ], gamma=0.1)
+    scheduler = LR.MultiStepLR(optimizer, milestones=[ 5, 10, ], gamma=0.1)
 
-    for epoch in trange(1, epochs+1):
+    if resume:
+        if checkpoint_path is None:
+            checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint-latest.pth')
+        print('Loading checkpoint:', checkpoint_path)
+        load_checkpoint(checkpoint_path)
+
+    for epoch in trange(first_epoch, epochs+1, desc='Epoch'):
         sum_loss = 0
         model.train()
-        for batch_index, (song, oke) in tqdm(enumerate(train_loader), total=len(train_loader)):
+        for batch_index, (song, oke) in tqdm(enumerate(train_loader), total=len(train_loader), desc='Train'):
             song = song.to(device)
             oke = oke.to(device)
 
@@ -111,10 +138,9 @@ if __name__ == '__main__':
         loss_value = sum_loss / len(train_loader)
         log_loss.append(loss_value)
         plot_loss()
-        save_checkpoint()
 
         model.eval()
-        for batch_index, (song, _) in tqdm(enumerate(test_loader), total=len(test_loader)):
+        for batch_index, (song, _) in tqdm(enumerate(test_loader), total=len(test_loader), desc='Test'):
             song = song.to(device)
             with torch.no_grad():
                 pred = model(song)
@@ -125,3 +151,5 @@ if __name__ == '__main__':
 
                 pred_path = os.path.join(test_dir, '%d_%d.wav' % (batch_index, inbatch_index))
                 pred_audio.export(pred_path, format='wav')
+
+        save_checkpoint()
