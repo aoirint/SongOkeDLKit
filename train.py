@@ -95,14 +95,14 @@ if __name__ == '__main__':
     def save_checkpoint():
         checkpoint = {
             'model': model.state_dict(),
-            'optimizer': optimizer,
-            'scheduler': scheduler,
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
             'log_loss': log_loss,
             'epoch': epoch,
         }
         if epoch % dump_interval == 0:
-            torch.save(checkpoint, os.path.join(checkpoint_dir, 'checkpoint-%d.ckpt' % epoch))
-        torch.save(checkpoint, os.path.join(checkpoint_dir, 'checkpoint-latest.ckpt'))
+            torch.save(checkpoint, os.path.join(checkpoint_dir, 'checkpoint-%d.pth' % epoch))
+        torch.save(checkpoint, os.path.join(checkpoint_dir, 'checkpoint-latest.pth'))
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=cpu_workers)
     test_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=cpu_workers)
