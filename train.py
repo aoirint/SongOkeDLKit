@@ -37,6 +37,10 @@ if __name__ == '__main__':
     test_dir = os.path.join(log_dir, 'test')
     os.makedirs(test_dir, exist_ok=True)
 
+    song_dir = os.path.join(test_dir, 'song') ; os.makedirs(song_dir, exist_ok=True)
+    oke_dir = os.path.join(test_dir, 'oke') ; os.makedirs(oke_dir, exist_ok=True)
+    pred_dir = os.path.join(test_dir, 'pred') ; os.makedirs(pred_dir, exist_ok=True)
+
     def conv1d(in_channels, out_channels, k, p):
         return nn.Conv1d(in_channels, out_channels, kernel_size=k, padding=p)
 
@@ -45,6 +49,10 @@ if __name__ == '__main__':
 
     def sigmoid():
         return nn.Sigmoid()
+
+    class Rescale(nn.Module):
+        def __call__(self, x):
+            return (x + 1.0) / 2.0
 
     model = nn.Sequential(
         conv1d(2, 16, k=3, p=1),
@@ -58,6 +66,7 @@ if __name__ == '__main__':
         relu(),
         conv1d(16, 2, k=3, p=1),
         sigmoid(),
+        Rescale(),
     )
     model = model.to(device)
 
@@ -140,16 +149,24 @@ if __name__ == '__main__':
         plot_loss()
 
         model.eval()
-        for batch_index, (song, _) in tqdm(enumerate(test_loader), total=len(test_loader), desc='Test'):
+        for batch_index, (song, oke) in tqdm(enumerate(test_loader), total=len(test_loader), desc='Test'):
             song = song.to(device)
             with torch.no_grad():
                 pred = model(song)
 
             for inbatch_index in range(pred.shape[0]):
+                song_tensor = song[inbatch_index]
+                oke_tensor = oke[inbatch_index]
                 pred_tensor = pred[inbatch_index]
+                song_audio = BTF.to_pydub(song_tensor)
+                oke_audio = BTF.to_pydub(oke_tensor)
                 pred_audio = BTF.to_pydub(pred_tensor)
 
-                pred_path = os.path.join(test_dir, '%d_%d.wav' % (batch_index, inbatch_index))
+                song_path = os.path.join(song_dir, '%d_%d.wav' % (batch_index, inbatch_index))
+                song_audio.export(song_path, format='wav')
+                oke_path = os.path.join(oke_dir, '%d_%d.wav' % (batch_index, inbatch_index))
+                oke_audio.export(oke_path, format='wav')
+                pred_path = os.path.join(pred_dir, '%d_%d.wav' % (batch_index, inbatch_index))
                 pred_audio.export(pred_path, format='wav')
 
         save_checkpoint()
