@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 import torchaudio.transforms as T
+from pydub import AudioSegment
 
 '''
 in: pydub.AudioSegment
@@ -21,3 +22,26 @@ def to_tensor(audio):
     samples = torch.from_numpy(samples).type(torch.float32)
 
     return samples
+
+'''
+in: torch.Tensor (float32)
+out: pydub.AudioSegment
+'''
+def to_pydub(tensor, sample_width=4, frame_rate=44100):
+    assert len(tensor.shape) == 2 # [channels, samples]
+
+    samples = tensor.cpu().numpy().astype(np.float32)
+
+    sample_bits = 8 * sample_width
+    sample_max_int = 2 ** sample_bits
+    channels = samples.shape[0]
+
+    samples = (samples * sample_max_int).astype(np.int32)
+
+    output = AudioSegment(
+        samples.tobytes(),
+        sample_width=sample_width,
+        frame_rate=frame_rate,
+        channels=channels,
+    )
+    return output

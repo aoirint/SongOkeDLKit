@@ -3,10 +3,20 @@ import numpy as np
 import torch
 import torchaudio
 import torchaudio.transforms as T
-import .functional as BTF
+from . import functional as BTF
 
 class BiAudioTransform:
     pass
+
+class Compose(BiAudioTransform):
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, *args):
+        ret = args
+        for transform in self.transforms:
+            ret = transform(*ret)
+        return ret
 
 '''
 in: pydub.AudioSegment

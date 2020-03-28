@@ -28,6 +28,8 @@ class SongOkeCroppedDataset(Dataset):
         song_path = os.path.join(self.root_dir, song_relpath)
         oke_path = os.path.join(self.root_dir, oke_relpath)
 
+        # print(song_path, oke_path)
+
         def load_audio(path):
             ext = os.path.splitext(path)[1][1:] # FILE.m4a -> .m4a -> m4a
             return AudioSegment.from_file(path, format=ext)
@@ -35,9 +37,18 @@ class SongOkeCroppedDataset(Dataset):
         song = load_audio(song_path)
         oke = load_audio(oke_path)
 
+        # print(len(song), len(oke))
+        # print(song.frame_rate, oke.frame_rate)
+
+        song = song.set_frame_rate(44100)
+        song = song.set_sample_width(4)
+        oke = oke.set_frame_rate(44100)
+        oke = oke.set_sample_width(4)
+
         if self.bi_transform is not None:
             song, oke = self.bi_transform(song, oke)
 
+        # print(song.shape, oke.shape)
         return song, oke
 
 if __name__ == '__main__':
