@@ -28,7 +28,7 @@ def to_tensor(audio):
 in: torch.Tensor (float32)
 out: pydub.AudioSegment
 '''
-def to_pydub(tensor, sample_width=2, frame_rate=44100):
+def to_pydub(tensor, sample_width=4, frame_rate=44100):
     # assert len(tensor.shape) == 2 # [channels, samples]
 
     samples = tensor.cpu().type(torch.float32).numpy().astype(np.float32)
@@ -36,7 +36,7 @@ def to_pydub(tensor, sample_width=2, frame_rate=44100):
 
     sample_bits = 8 * sample_width
     sample_max_int = 2 ** (sample_bits - 1)
-    channels = 2
+    channels = samples.shape[0]
 
     samples = (samples * sample_max_int).astype(np.int32)
     samples = samples.transpose((1, 0)).reshape((-1, )) # Channel, Samples -> LRLR
