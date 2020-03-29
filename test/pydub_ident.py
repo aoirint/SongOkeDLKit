@@ -14,4 +14,4 @@ audio = audio.set_sample_width(4)
 tensor = BTF.to_tensor(audio)
 audio = BTF.to_pydub(tensor)
 
-audio.export('export.wav')
+audio.export('export.wav', format='wav')

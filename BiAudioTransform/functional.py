@@ -11,7 +11,7 @@ out: torch.Tensor (float32)
 def to_tensor(audio):
     sample_width = audio.sample_width
     sample_bits = 8 * sample_width
-    sample_max_int = 2 ** sample_bits
+    sample_max_int = 2 ** (sample_bits - 1)
     sample_channels = audio.channels
 
     samples = np.asarray(audio.get_array_of_samples())
@@ -28,20 +28,20 @@ def to_tensor(audio):
 in: torch.Tensor (float32)
 out: pydub.AudioSegment
 '''
-def to_pydub(tensor, sample_width=4, frame_rate=44100):
-    assert len(tensor.shape) == 2 # [channels, samples]
+def to_pydub(tensor, sample_width=2, frame_rate=44100):
+    # assert len(tensor.shape) == 2 # [channels, samples]
 
-    samples = tensor.cpu().type(torch.float64).numpy().astype(np.float64)
-    samples = np.clip(samples, 0.0, 1.0)
+    samples = tensor.cpu().type(torch.float32).numpy().astype(np.float32)
+    samples = np.clip(samples, -1.0, 1.0)
 
     sample_bits = 8 * sample_width
-    sample_max_int = 2 ** sample_bits - 1
-    channels = samples.shape[0]
+    sample_max_int = 2 ** (sample_bits - 1)
+    channels = 2
 
     samples = (samples * sample_max_int).astype(np.int32)
     samples = samples.transpose((1, 0)).reshape((-1, )) # Channel, Samples -> LRLR
     # samples = samples.astype('>i4') # big endian 4 bytes signed int
-    samples = samples.astype('<i4') # little endian 4 bytes signed int
+    # samples = samples.astype('<i4') # little endian 4 bytes signed int
 
     output = AudioSegment(
         samples.tobytes(),
