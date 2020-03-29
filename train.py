@@ -121,7 +121,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=cpu_workers)
 
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=5e-4)
-    scheduler = LR.MultiStepLR(optimizer, milestones=[ 5, 10, ], gamma=0.1)
+    scheduler = LR.MultiStepLR(optimizer, milestones=[ 10, 30, ], gamma=0.1)
 
     if resume:
         if checkpoint_path is None:
