@@ -11,3 +11,11 @@ print(b)
 c = b.transpose((1, 0))
 print(c.shape)
 print(c)
+
+d = c.transpose((1, 0))
+print(d.shape)
+print(d)
+
+e = d.reshape((-1, ))
+print(e.shape)
+print(e)

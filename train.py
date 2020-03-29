@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     root_dir = os.path.expanduser('~/datasets/MaouSongOkeCroppedDataset')
     epochs = 300
-    batch_size = 32
+    batch_size = 10
     lr = 1e-2
     cpu_workers = 4
     dump_interval = 5
@@ -41,12 +41,12 @@ if __name__ == '__main__':
     oke_dir = os.path.join(test_dir, 'oke') ; os.makedirs(oke_dir, exist_ok=True)
     pred_dir = os.path.join(test_dir, 'pred') ; os.makedirs(pred_dir, exist_ok=True)
 
-    def conv1d(in_channels, out_channels, k, p):
+    def conv1d(in_channels, out_channels, k, p=0):
         return nn.Conv1d(in_channels, out_channels, kernel_size=k, padding=p)
-
+    def batchnorm(features):
+        return nn.BatchNorm1d(num_features=features)
     def relu():
         return nn.ReLU()
-
     def sigmoid():
         return nn.Sigmoid()
 
@@ -55,18 +55,22 @@ if __name__ == '__main__':
             return (x + 1.0) / 2.0
 
     model = nn.Sequential(
-        conv1d(2, 16, k=3, p=1),
+        conv1d(2, 32, k=3, p=1),
+        batchnorm(32),
         relu(),
-        conv1d(16, 32, k=3, p=1),
         conv1d(32, 64, k=3, p=1),
+        batchnorm(64),
+        relu(),
+        conv1d(64, 128, k=3, p=1),
+        batchnorm(128),
+        relu(),
+        conv1d(128, 64, k=3, p=1),
+        batchnorm(64),
         relu(),
         conv1d(64, 32, k=3, p=1),
+        batchnorm(32),
         relu(),
-        conv1d(32, 16, k=3, p=1),
-        relu(),
-        conv1d(16, 2, k=3, p=1),
-        sigmoid(),
-        Rescale(),
+        conv1d(32, 2, k=1),
     )
     model = model.to(device)
 
