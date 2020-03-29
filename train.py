@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
             pred = model(song)
 
-            loss = F.mse_loss(oke, pred)
+            loss = F.mse_loss(pred, oke)
 
             optimizer.zero_grad()
             loss.backward()
